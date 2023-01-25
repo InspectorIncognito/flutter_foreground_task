@@ -21,7 +21,7 @@ data class ForegroundServiceStatus(val action: String) {
 
             with(prefs.edit()) {
                 putString(PrefsKey.FOREGROUND_SERVICE_ACTION, action)
-                commit()
+                apply()
             }
         }
     }

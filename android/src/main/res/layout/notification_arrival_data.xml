@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="48dp">
+
+    <RelativeLayout
+        android:id="@+id/service_wait_layout"
+        android:layout_width="match_parent"
+        android:layout_height="48dp">
+
+        <LinearLayout
+            android:id="@+id/stop_details"
+            android:layout_marginStart="18dp"
+            android:gravity="center_vertical"
+            android:layout_centerVertical="true"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/stop_image_"
+                android:src="@drawable/iconos_paradero_mapa"
+                android:layout_width="22dp"
+                android:layout_height="33dp" />
+
+            <LinearLayout
+                android:layout_marginEnd="8dp"
+                android:gravity="center_vertical"
+                android:orientation="vertical"
+                android:layout_marginStart="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif"
+                    android:textColor="@color/grises_generales_mid_gray_2"
+                    android:text="@string/stop_text"
+                    />
+
+                <TextView
+                    android:id="@+id/stop_code_text"
+                    android:layout_width="wrap_content"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif"
+                    android:textStyle="bold"
+                    android:textColor="@color/grises_generales_dark_gray_1"
+                    tools:text="PE433"
+                    />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bus_details"
+            android:layout_toEndOf="@id/stop_details"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginStart="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/service_image"
+                android:tint="@color/grises_generales_mid_gray_2"
+                android:src="@drawable/ic_bus_transantiago"
+                android:layout_width="28dp"
+                android:layout_height="28dp"/>
+
+            <LinearLayout
+                android:layout_marginStart="4dp"
+                android:orientation="vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/data_top_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif"
+                    android:textColor="@color/grises_generales_mid_gray_2"
+                    tools:text="A 1.2 Kms"
+                    />
+
+                <TextView
+                    android:id="@+id/data_bottom_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="#c8102e"
+                    tools:text="506 - PE2457"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</LinearLayout>

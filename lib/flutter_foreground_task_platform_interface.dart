@@ -1,3 +1,4 @@
+import 'package:flutter_foreground_task/models/notification_data.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'flutter_foreground_task_method_channel.dart';
@@ -27,12 +28,17 @@ abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  Future<void> initService({
+    Function? callback,
+  }) {
+    throw UnimplementedError('initService() has not been implemented.');
+  }
+
   Future<bool> startService({
     required AndroidNotificationOptions androidNotificationOptions,
     required IOSNotificationOptions iosNotificationOptions,
     required ForegroundTaskOptions foregroundTaskOptions,
-    required String notificationTitle,
-    required String notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) {
     throw UnimplementedError('startService() has not been implemented.');
@@ -43,8 +49,7 @@ abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
   }
 
   Future<bool> updateService({
-    String? notificationTitle,
-    String? notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) {
     throw UnimplementedError('updateService() has not been implemented.');

@@ -15,6 +15,17 @@ import com.pravera.flutter_foreground_task.models.NotificationOptions
  * @version 1.0
  */
 class ForegroundServiceManager {
+	fun init(context: Context, arguments: Any?): Boolean {
+		try {
+			val argsMap = arguments as? Map<*, *>
+			ForegroundServiceStatus.putData(context, ForegroundServiceAction.INIT)
+			ForegroundTaskOptions.putData(context, argsMap)
+		} catch (e: Exception) {
+			return false
+		}
+		return true
+	}
+
 	/**
 	 * Start the foreground service.
 	 *

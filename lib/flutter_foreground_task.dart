@@ -9,6 +9,7 @@ import 'package:flutter_foreground_task/exception/foreground_task_exception.dart
 import 'package:flutter_foreground_task/models/foreground_task_options.dart';
 import 'package:flutter_foreground_task/models/ios_notification_options.dart';
 import 'package:flutter_foreground_task/models/android_notification_options.dart';
+import 'package:flutter_foreground_task/models/notification_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_android/shared_preferences_android.dart';
 import 'package:shared_preferences_ios/shared_preferences_ios.dart';
@@ -58,21 +59,25 @@ class FlutterForegroundTask {
   static bool _initialized = false;
 
   /// Initialize the [FlutterForegroundTask].
-  static void init({
+  static Future<void> init({
     required AndroidNotificationOptions androidNotificationOptions,
     required IOSNotificationOptions iosNotificationOptions,
     required ForegroundTaskOptions foregroundTaskOptions,
-  }) {
+    Function? callback,
+  }) async {
     _androidNotificationOptions = androidNotificationOptions;
     _iosNotificationOptions = iosNotificationOptions;
     _foregroundTaskOptions = foregroundTaskOptions;
     _initialized = true;
+    print("PLUGIN: init");
+    return await FlutterForegroundTaskPlatform.instance.initService(
+      callback: callback,
+    );
   }
 
   /// Start the foreground service with notification.
   static Future<bool> startService({
-    required String notificationTitle,
-    required String notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) async {
     if (_initialized == false) {
@@ -84,8 +89,7 @@ class FlutterForegroundTask {
       androidNotificationOptions: _androidNotificationOptions,
       iosNotificationOptions: _iosNotificationOptions,
       foregroundTaskOptions: _foregroundTaskOptions,
-      notificationTitle: notificationTitle,
-      notificationText: notificationText,
+      notificationData: notificationData,
       callback: callback,
     );
   }
@@ -96,13 +100,11 @@ class FlutterForegroundTask {
 
   /// Update the foreground service.
   static Future<bool> updateService({
-    String? notificationTitle,
-    String? notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) =>
       FlutterForegroundTaskPlatform.instance.updateService(
-        notificationText: notificationText,
-        notificationTitle: notificationTitle,
+        notificationData: notificationData,
         callback: callback,
       );
 
@@ -240,6 +242,7 @@ class FlutterForegroundTask {
   ///
   /// It must always be called from a top-level function, otherwise foreground task will not work.
   static void setTaskHandler(TaskHandler handler) {
+    print("PLUGIN: setTaskHandler");
     // Create a method channel to communicate with the platform.
     const backgroundChannel =
         MethodChannel('flutter_foreground_task/background');
@@ -278,7 +281,7 @@ class FlutterForegroundTask {
     });
 
     // Initializes the plug-in background channel and starts a foreground task.
-    backgroundChannel.invokeMethod('initialize');
+    //backgroundChannel.invokeMethod('initialize');
   }
 
   static ReceivePort? _registerPort() {

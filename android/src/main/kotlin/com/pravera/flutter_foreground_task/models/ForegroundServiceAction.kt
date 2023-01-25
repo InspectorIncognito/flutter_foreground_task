@@ -9,6 +9,7 @@ package com.pravera.flutter_foreground_task.models
 object ForegroundServiceAction {
 	private const val prefix = "com.pravera.flutter_foreground_task.action."
 
+	const val INIT = prefix + "init"
 	const val START = prefix + "start"
 	const val UPDATE = prefix + "update"
 	const val REBOOT = prefix + "reboot"

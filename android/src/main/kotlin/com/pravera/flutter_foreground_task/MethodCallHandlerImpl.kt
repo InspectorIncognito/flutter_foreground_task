@@ -3,6 +3,7 @@ package com.pravera.flutter_foreground_task
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 
 import com.pravera.flutter_foreground_task.errors.ErrorCodes
 import com.pravera.flutter_foreground_task.service.ServiceProvider
@@ -30,6 +31,11 @@ class MethodCallHandlerImpl(private val context: Context, private val provider: 
         val args = call.arguments
 
         when (call.method) {
+            "initService" -> {
+                provider.getForegroundServiceManager().init(context, args)
+                provider.connectToHandler(context, args)
+                result.success(true)
+            }
             "startService" ->
                 result.success(provider.getForegroundServiceManager().start(context, args))
             "restartService" ->
