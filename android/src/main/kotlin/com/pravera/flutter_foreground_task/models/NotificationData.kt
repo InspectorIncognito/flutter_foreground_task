@@ -39,6 +39,15 @@ abstract class NotificationData(val id: Int, val vibration: Boolean) {
                     metadataObj.getInt(PreferencesKey.NOTIFICATION_ARRIVAL_ARRIVING) == 1,
                     plate,
                 )
+            } else if (type == "NotificationType.TRAVEL") {
+                return TravelNotificationData(
+                    id,
+                    vibration,
+                    metadataObj.getString(PreferencesKey.NOTIFICATION_TRAVEL_CODE),
+                    metadataObj.getString(PreferencesKey.NOTIFICATION_TRAVEL_STOPS),
+                    metadataObj.getString(PreferencesKey.NOTIFICATION_TRAVEL_NAME),
+                    metadataObj.getString(PreferencesKey.NOTIFICATION_TRAVEL_TOP),
+                )
             }
             throw IllegalStateException("WRONG TYPE")
         }
@@ -49,4 +58,7 @@ class NormalNotificationData(id: Int, vibration: Boolean, val title: String, val
     NotificationData(id, vibration)
 
 class ArrivalNotificationData(id: Int, vibration: Boolean, val stopCode: String, val topMessage: String, val bottomMessage: String, val arriving: Boolean, val plate: String?) :
+    NotificationData(id, vibration)
+
+class TravelNotificationData(id: Int, vibration: Boolean, val destinationCode: String, val destinationStops: String, val destinationName: String, val topMessage: String) :
     NotificationData(id, vibration)

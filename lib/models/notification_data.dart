@@ -48,3 +48,15 @@ class ArrivalNotificationData extends NotificationData {
     "arriving": arriving ? 1 : 0,
   }, NotificationType.ARRIVAL, id, vibrationEnabled);
 }
+
+class TravelNotificationData extends NotificationData {
+
+  TravelNotificationData(
+      int id, String destinationCode, String destinationStops, String destinationName, String topMessage, {bool vibrationEnabled=false})
+      : super({
+    "destinationCode": destinationCode,
+    "destinationStops": destinationStops,
+    "destinationName": destinationName,
+    "topMessage": topMessage,
+  }, NotificationType.TRAVEL, id, vibrationEnabled);
+}

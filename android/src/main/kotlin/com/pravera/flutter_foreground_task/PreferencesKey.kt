@@ -28,6 +28,10 @@ object PreferencesKey {
     const val NOTIFICATION_ARRIVAL_BOTTOM = "bottomMessage"
     const val NOTIFICATION_ARRIVAL_ARRIVING = "arriving"
     const val NOTIFICATION_ARRIVAL_PLATE = "plate"
+    const val NOTIFICATION_TRAVEL_CODE = "destinationCode"
+    const val NOTIFICATION_TRAVEL_STOPS = "destinationStops"
+    const val NOTIFICATION_TRAVEL_NAME = "destinationName"
+    const val NOTIFICATION_TRAVEL_TOP = "topMessage"
 
     const val FOREGROUND_TASK_OPTIONS_PREFS_NAME = prefix + "FOREGROUND_TASK_OPTIONS"
     const val TASK_INTERVAL = "interval"

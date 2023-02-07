@@ -123,16 +123,16 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 	private fun updateNotification() {
 		val data = notificationOptions.notificationData
 		val mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-		if (data is ArrivalNotificationData) {
-			mNotificationManager.notify(data.id, buildArrivalNotification(data.stopCode, data.topMessage, data.bottomMessage).build())
-			/*if (data.arriving && currentPlate != data.plate) {
-				mNotificationManager.notify(NOTIFICATION_ID, buildArrivingNotification().build())
-				currentPlate = data.plate
-			} else if (!data.arriving) {
-				mNotificationManager.cancel(NOTIFICATION_ID)
-			}*/
-		} else if (data is NormalNotificationData) {
-			mNotificationManager.notify(data.id, buildNormalNotification(data.title, data.message, data.vibration).build())
+		when (data) {
+			is ArrivalNotificationData -> {
+				mNotificationManager.notify(data.id, buildArrivalNotification(data.stopCode, data.topMessage, data.bottomMessage).build())
+			}
+			is NormalNotificationData -> {
+				mNotificationManager.notify(data.id, buildNormalNotification(data.title, data.message, data.vibration).build())
+			}
+			is TravelNotificationData -> {
+				mNotificationManager.notify(data.id, buildTravelNotification(data).build())
+			}
 		}
 	}
 
@@ -187,6 +187,39 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 			mNotificationManager.createNotificationChannel(arrivalChannel)
 		}
 		//executeDartCallback(foregroundTaskOptions.callbackHandle)
+	}
+
+	private fun buildTravelNotification(data: TravelNotificationData): NotificationCompat.Builder {
+		val notificationLayout = if (data.destinationCode == "") {
+			val layout = RemoteViews(packageName, R.layout.notification_travel_empty)
+			layout.setTextViewText(R.id.notification_top, data.topMessage)
+			val color = getNotificationColor()
+			if (color != null) {
+				layout.setTextColor(R.id.notification_top, color)
+			}
+			layout
+		} else {
+			val layout = RemoteViews(packageName, R.layout.notification_travel_data)
+			layout.setTextViewText(R.id.stop_code, data.destinationCode)
+			layout.setTextViewText(R.id.stations_quantity, data.destinationStops)
+			layout.setTextViewText(R.id.stop_name, data.destinationName)
+			layout
+		}
+
+		val notificationBuilder = NotificationCompat.Builder(this, TRIP_CHANNEL_ID)
+			.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+			.setCustomContentView(notificationLayout)
+			.setSmallIcon(getAppIconResourceId(applicationContext.packageManager))
+			.setAutoCancel(true)
+
+		val color = getNotificationColor()
+		if (color != null) {
+			notificationBuilder.color = color
+		}
+		val pendingIntent = getPendingIntent(applicationContext.packageManager)
+
+		notificationBuilder.setContentIntent(pendingIntent)
+		return notificationBuilder
 	}
 
 	private fun buildArrivalNotification(stopCode: String, top: String, bottom: String): NotificationCompat.Builder {
@@ -294,11 +327,16 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 
 	@SuppressLint("WrongConstant")
 	private fun startForegroundService() {
-		val data = notificationOptions.notificationData
-		if (data is ArrivalNotificationData) {
-			startForeground(data.id, buildArrivalNotification(data.stopCode, data.topMessage, data.bottomMessage).build())
-		} else if (data is NormalNotificationData) {
-			startForeground(data.id, buildNormalNotification(data.title, data.message).build())
+		when (val data = notificationOptions.notificationData) {
+			is ArrivalNotificationData -> {
+				startForeground(data.id, buildArrivalNotification(data.stopCode, data.topMessage, data.bottomMessage).build())
+			}
+			is NormalNotificationData -> {
+				startForeground(data.id, buildNormalNotification(data.title, data.message).build())
+			}
+			is TravelNotificationData -> {
+				startForeground(data.id, buildTravelNotification(data).build())
+			}
 		}
 
 		acquireLockMode()
