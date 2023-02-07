@@ -18,6 +18,8 @@ object PreferencesKey {
     const val NOTIFICATION_DATA = "notificationData"
     const val NOTIFICATION_METADATA = "notificationMetadata"
     const val NOTIFICATION_TYPE = "notificationType"
+    const val NOTIFICATION_ID = "notificationId"
+    const val NOTIFICATION_VIBRATION = "notificationVibration"
 
     const val NOTIFICATION_NORMAL_TITLE = "title"
     const val NOTIFICATION_NORMAL_MESSAGE = "message"

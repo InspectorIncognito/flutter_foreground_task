@@ -1,6 +1,7 @@
 package com.pravera.flutter_foreground_task.models
 
 import android.content.Context
+import android.util.Log
 import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
 
 data class ForegroundTaskOptions(
@@ -32,6 +33,7 @@ data class ForegroundTaskOptions(
             } else {
                 null
             }
+            Log.d("ForegroundTaskOptions", "get handler: $callbackHandle")
 
             return ForegroundTaskOptions(
                 interval = interval,
@@ -50,6 +52,7 @@ data class ForegroundTaskOptions(
 
             val interval = "${map?.get(PrefsKey.TASK_INTERVAL)}".toLongOrNull() ?: 5000L
             val callbackHandle = "${map?.get(PrefsKey.CALLBACK_HANDLE)}".toLongOrNull()
+            Log.d("ForegroundTaskOptions", "put handler: $callbackHandle")
             with(prefs.edit()) {
                 putLong(PrefsKey.TASK_INTERVAL, interval)
                 remove(PrefsKey.CALLBACK_HANDLE)
@@ -67,7 +70,7 @@ data class ForegroundTaskOptions(
                 PrefsKey.FOREGROUND_TASK_OPTIONS_PREFS_NAME, Context.MODE_PRIVATE)
 
             val callbackHandle = "${map?.get(PrefsKey.CALLBACK_HANDLE)}".toLongOrNull()
-
+            Log.d("ForegroundTaskOptions", "updateCallbackHandle handler: $callbackHandle")
             with(prefs.edit()) {
                 remove(PrefsKey.CALLBACK_HANDLE)
                 if (callbackHandle != null) {
@@ -81,7 +84,7 @@ data class ForegroundTaskOptions(
         fun clearData(context: Context) {
             val prefs = context.getSharedPreferences(
                 PrefsKey.FOREGROUND_TASK_OPTIONS_PREFS_NAME, Context.MODE_PRIVATE)
-
+            Log.d("ForegroundTaskOptions", "clear handler")
             with(prefs.edit()) {
                 clear()
                 apply()

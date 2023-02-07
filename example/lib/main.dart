@@ -24,7 +24,7 @@ class MyTaskHandler extends TaskHandler {
   }
 
   @override
-  Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {
+  Future<void> onEvent(DateTime timestamp, SendPort? sendPort, String data) async {
     print("BACKGROUND: onEvent $_eventCount");
     /*FlutterForegroundTask.updateService(
       notificationText: 'eventCount: $_eventCount',
@@ -97,7 +97,7 @@ class _ExamplePageState extends State<ExamplePage> {
     } else {
       reqResult = await FlutterForegroundTask.startService(
         //notificationData: NormalNotificationData("Hola", "Mensaje 1"),
-        notificationData: ArrivalNotificationData("PA1231", "Aviso enviado", "Buscando (?)"),
+        notificationData: ArrivalNotificationData(1234, "PA1231", "Aviso enviado", "Buscando (?)"),
         callback: startCallback,
       );
     }

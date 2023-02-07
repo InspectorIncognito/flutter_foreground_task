@@ -42,6 +42,8 @@ class MethodCallHandlerImpl(private val context: Context, private val provider: 
                 result.success(provider.getForegroundServiceManager().restart(context, args))
             "updateService" ->
                 result.success(provider.getForegroundServiceManager().update(context, args))
+            "cancelNotification" ->
+                result.success(provider.getForegroundServiceManager().cancelNotification(context, args))
             "stopService" ->
                 result.success(provider.getForegroundServiceManager().stop(context))
             "isRunningService" ->

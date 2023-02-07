@@ -36,7 +36,7 @@ abstract class TaskHandler {
   Future<void> onStart(DateTime timestamp, SendPort? sendPort);
 
   /// Called when an event occurs.
-  Future<void> onEvent(DateTime timestamp, SendPort? sendPort);
+  Future<void> onEvent(DateTime timestamp, SendPort? sendPort, String data);
 
   /// Called when the task is destroyed.
   Future<void> onDestroy(DateTime timestamp, SendPort? sendPort);
@@ -69,7 +69,7 @@ class FlutterForegroundTask {
     _iosNotificationOptions = iosNotificationOptions;
     _foregroundTaskOptions = foregroundTaskOptions;
     _initialized = true;
-    print("PLUGIN: init");
+    print("FlutterForegroundTask: init");
     return await FlutterForegroundTaskPlatform.instance.initService(
       callback: callback,
     );
@@ -78,8 +78,10 @@ class FlutterForegroundTask {
   /// Start the foreground service with notification.
   static Future<bool> startService({
     required NotificationData notificationData,
+    ForegroundTaskOptions? foregroundTaskOptions,
     Function? callback,
   }) async {
+    _foregroundTaskOptions = foregroundTaskOptions ?? _foregroundTaskOptions;
     if (_initialized == false) {
       throw const ForegroundTaskException(
           'Not initialized. Please call this function after calling the init function.');
@@ -106,6 +108,14 @@ class FlutterForegroundTask {
       FlutterForegroundTaskPlatform.instance.updateService(
         notificationData: notificationData,
         callback: callback,
+      );
+
+  /// Cancel a notification
+  static Future<bool> cancelNotification({
+    required int id,
+  }) =>
+      FlutterForegroundTaskPlatform.instance.cancelNotification(
+        id: id,
       );
 
   /// Stop the foreground service.
@@ -242,7 +252,7 @@ class FlutterForegroundTask {
   ///
   /// It must always be called from a top-level function, otherwise foreground task will not work.
   static void setTaskHandler(TaskHandler handler) {
-    print("PLUGIN: setTaskHandler");
+    print("FlutterForegroundTask: setTaskHandler");
     // Create a method channel to communicate with the platform.
     const backgroundChannel =
         MethodChannel('flutter_foreground_task/background');
@@ -267,7 +277,7 @@ class FlutterForegroundTask {
           await handler.onStart(timestamp, sendPort);
           break;
         case 'onEvent':
-          await handler.onEvent(timestamp, sendPort);
+          await handler.onEvent(timestamp, sendPort, call.arguments.toString());
           break;
         case 'onDestroy':
           await handler.onDestroy(timestamp, sendPort);

@@ -81,6 +81,14 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
   }
 
   @override
+  Future<bool> cancelNotification({required int id}) async {
+    final options = <String, dynamic>{
+      'notificationId': id,
+    };
+    return await methodChannel.invokeMethod('cancelNotification', options);
+  }
+
+  @override
   Future<bool> stopService() async {
     if (await isRunningService) {
       return await methodChannel.invokeMethod('stopService');

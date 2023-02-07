@@ -107,4 +107,9 @@ abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
     throw UnimplementedError(
         'openSystemAlertWindowSettings has not been implemented.');
   }
+
+  Future<bool> cancelNotification({required int id}) {
+    throw UnimplementedError(
+        'cancelNotification has not been implemented.');
+  }
 }
