@@ -30,6 +30,7 @@ object PreferencesKey {
     const val NOTIFICATION_ARRIVAL_PLATE = "plate"
     const val NOTIFICATION_TRAVEL_CODE = "destinationCode"
     const val NOTIFICATION_TRAVEL_STOPS = "destinationStops"
+    const val NOTIFICATION_TRAVEL_STOPS_SUFFIX = "destinationStopsSuffix"
     const val NOTIFICATION_TRAVEL_NAME = "destinationName"
     const val NOTIFICATION_TRAVEL_TOP = "topMessage"
 

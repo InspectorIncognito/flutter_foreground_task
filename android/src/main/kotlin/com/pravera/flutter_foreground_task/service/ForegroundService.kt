@@ -203,6 +203,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 			layout.setTextViewText(R.id.stop_code, data.destinationCode)
 			layout.setTextViewText(R.id.stations_quantity, data.destinationStops)
 			layout.setTextViewText(R.id.stop_name, data.destinationName)
+			layout.setTextViewText(R.id.station_plural, data.destinationStopsSuffix)
 			layout
 		}
 

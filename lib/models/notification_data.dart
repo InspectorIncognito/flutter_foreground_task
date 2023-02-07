@@ -52,11 +52,12 @@ class ArrivalNotificationData extends NotificationData {
 class TravelNotificationData extends NotificationData {
 
   TravelNotificationData(
-      int id, String destinationCode, String destinationStops, String destinationName, String topMessage, {bool vibrationEnabled=false})
+      int id, String destinationCode, String destinationStops, String destinationName, String topMessage, {bool vibrationEnabled=false, String destinationStopsSuffix=""})
       : super({
     "destinationCode": destinationCode,
     "destinationStops": destinationStops,
     "destinationName": destinationName,
     "topMessage": topMessage,
+    "destinationStopsSuffix": destinationStops,
   }, NotificationType.TRAVEL, id, vibrationEnabled);
 }
