@@ -480,9 +480,11 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 
 	private fun stopForegroundTask() {
 		Log.d(TAG, "stopForegroundTask")
-		LocationManager.getInstance(this).stopLocationUpdates()
-		backgroundJob?.cancel()
-		backgroundJob = null
+		if (backgroundJob != null) {
+			LocationManager.getInstance(this).stopLocationUpdates()
+			backgroundJob?.cancel()
+			backgroundJob = null
+		}
 	}
 
 	private fun destroyBackgroundChannel() {
