@@ -81,6 +81,16 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
   }
 
   @override
+  Future<bool> notify({
+    required NotificationData notificationData,
+  }) async {
+    final options = <String, dynamic>{
+      'notificationData': notificationData.toJson(),
+    };
+    return await methodChannel.invokeMethod('notify', options);
+  }
+
+  @override
   Future<bool> cancelNotification({required int id}) async {
     final options = <String, dynamic>{
       'notificationId': id,

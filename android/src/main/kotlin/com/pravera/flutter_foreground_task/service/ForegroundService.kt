@@ -52,7 +52,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 			private set
 	}
 
-	private lateinit var foregroundServiceStatus: ForegroundServiceStatus
+	private var foregroundServiceStatus: ForegroundServiceStatus? = null
 	private lateinit var foregroundTaskOptions: ForegroundTaskOptions
 	private lateinit var notificationOptions: NotificationOptions
 
@@ -96,7 +96,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 		Log.d(TAG, "onStartCommand")
 		fetchDataFromPreferences()
 
-		when (foregroundServiceStatus.action) {
+		when (foregroundServiceStatus?.action) {
 			ForegroundServiceAction.UPDATE -> {
 				Log.d(TAG, "onStartCommand UPDATE")
 				updateNotification()
@@ -260,7 +260,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 	}
 
 	private fun buildNormalNotification(title: String, message: String, enableVibration:Boolean = false): NotificationCompat.Builder {
-		val notificationBuilder = NotificationCompat.Builder(this, TRIP_CHANNEL_ID)
+		val notificationBuilder = NotificationCompat.Builder(this, ARRIVAL_CHANNEL_ID)
 			.setContentTitle(title)
 			.setContentText(message)
 			.setSmallIcon(getAppIconResourceId(applicationContext.packageManager))
@@ -285,7 +285,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 		releaseLockMode()
 		destroyBackgroundChannel()
 		unregisterBroadcastReceiver()
-		if (foregroundServiceStatus.action != ForegroundServiceAction.STOP) {
+		if (foregroundServiceStatus?.action != ForegroundServiceAction.STOP) {
 			if (isSetStopWithTaskFlag()) {
 				exitProcess(0)
 			} else {
@@ -555,5 +555,9 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 				PendingIntent.getActivity(this, 20000, launchIntent, 0)
 			}
 		}
+	}
+
+	fun createNotification() {
+		updateNotification()
 	}
 }

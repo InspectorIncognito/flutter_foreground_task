@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
+import com.pravera.flutter_foreground_task.models.NotificationOptions
 import com.pravera.flutter_foreground_task.service.ForegroundService
 import com.pravera.flutter_foreground_task.service.ForegroundServiceManager
 import com.pravera.flutter_foreground_task.service.ServiceProvider
@@ -83,5 +84,11 @@ class FlutterForegroundTaskPlugin : FlutterPlugin, ActivityAware, ServiceProvide
     override fun connectToHandler(context: Context, arguments: Any?) {
         Log.d("PLUGIN inner", "connectToHandler")
         foregroundService?.initHandler()
+    }
+
+    override fun notify(context: Context, args: Any?) {
+        val argsMap = args as? Map<*, *>
+        NotificationOptions.updateContent(context, argsMap)
+        foregroundService?.createNotification()
     }
 }

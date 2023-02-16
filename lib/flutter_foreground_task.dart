@@ -110,6 +110,13 @@ class FlutterForegroundTask {
         callback: callback,
       );
 
+  static Future<bool> notify({
+    required NotificationData notificationData,
+  }) =>
+      FlutterForegroundTaskPlatform.instance.notify(
+        notificationData: notificationData,
+      );
+
   /// Cancel a notification
   static Future<bool> cancelNotification({
     required int id,

@@ -36,6 +36,10 @@ class MethodCallHandlerImpl(private val context: Context, private val provider: 
                 provider.connectToHandler(context, args)
                 result.success(true)
             }
+            "notify" -> {
+                provider.notify(context, args)
+                result.success(true)
+            }
             "startService" ->
                 result.success(provider.getForegroundServiceManager().start(context, args))
             "restartService" ->
