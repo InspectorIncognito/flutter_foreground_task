@@ -558,6 +558,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 	}
 
 	fun createNotification() {
+		fetchDataFromPreferences()
 		updateNotification()
 	}
 }
