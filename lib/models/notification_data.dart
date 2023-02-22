@@ -58,6 +58,6 @@ class TravelNotificationData extends NotificationData {
     "destinationStops": destinationStops,
     "destinationName": destinationName,
     "topMessage": topMessage,
-    "destinationStopsSuffix": destinationStops,
+    "destinationStopsSuffix": destinationStopsSuffix,
   }, NotificationType.TRAVEL, id, vibrationEnabled);
 }
