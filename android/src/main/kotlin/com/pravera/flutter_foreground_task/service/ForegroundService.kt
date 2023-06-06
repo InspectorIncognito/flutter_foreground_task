@@ -5,14 +5,15 @@ import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.Location
 import android.net.wifi.WifiManager
 import android.os.*
 import android.util.Log
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
-import com.pravera.flutter_foreground_task.models.ForegroundServiceAction
-import com.pravera.flutter_foreground_task.models.ForegroundServiceStatus
-import com.pravera.flutter_foreground_task.models.ForegroundTaskOptions
-import com.pravera.flutter_foreground_task.models.NotificationOptions
+import com.pravera.flutter_foreground_task.R
+import com.pravera.flutter_foreground_task.location.LocationManager
+import com.pravera.flutter_foreground_task.models.*
 import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
@@ -41,6 +42,9 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
         private const val ACTION_NOTIFICATION_PRESSED = "onNotificationPressed"
         private const val DATA_FIELD_NAME = "data"
 
+		private const val TRIP_CHANNEL_ID = "TRIP_CHANNEL_ID"
+		private const val ARRIVAL_CHANNEL_ID = "ARRIVAL_CHANNEL_ID"
+
 		/** Returns whether the foreground service is running. */
 		var isRunningService = false
 			private set
@@ -58,6 +62,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 	private var currFlutterEngine: FlutterEngine? = null
 	private var backgroundChannel: MethodChannel? = null
 	private var backgroundJob: Job? = null
+	private var lastKnownLocation: Location? = null
 
 	// A broadcast receiver that handles intents that occur within the foreground service.
 	private var broadcastReceiver = object : BroadcastReceiver() {
@@ -95,11 +100,10 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 
 		when (foregroundServiceStatus.action) {
 			ForegroundServiceAction.UPDATE -> {
-				startForegroundService()
+				updateNotification()
 				executeDartCallback(foregroundTaskOptions.callbackHandle)
 			}
 			ForegroundServiceAction.RESTART -> {
-				startForegroundService()
 				executeDartCallback(foregroundTaskOptions.callbackHandleOnBoot)
 			}
 			ForegroundServiceAction.STOP -> {
@@ -108,7 +112,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 			}
 		}
 
-		return if (notificationOptions.isSticky) START_STICKY else START_NOT_STICKY
+		return START_STICKY
 	}
 
 	override fun onBind(intent: Intent?): IBinder? {
@@ -123,7 +127,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 		if (foregroundServiceStatus.action != ForegroundServiceAction.STOP) {
 			if (isSetStopWithTaskFlag()) {
 				exitProcess(0)
-			} else {
+			} /*else {
 				Log.i(TAG, "The foreground service was terminated due to an unexpected problem.")
 				if (notificationOptions.isSticky) {
 					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -134,7 +138,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 					}
 					setRestartAlarm()
 				}
-			}
+			}*/
 		}
 	}
 
@@ -165,13 +169,67 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 
 	@SuppressLint("WrongConstant")
 	private fun startForegroundService() {
-		// Get the icon and PendingIntent to put in the notification.
-		val pm = applicationContext.packageManager
-		val iconResType = notificationOptions.iconData?.resType
-		val iconResPrefix = notificationOptions.iconData?.resPrefix
-		val iconName = notificationOptions.iconData?.name
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			val mNotificationManager = this
+				.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+			// TRIP CHANNEL
+			val tripName = "Notificaciones de estado de viaje"
+			val tripImportance = NotificationManager.IMPORTANCE_LOW
+			val tripChannel = NotificationChannel(TRIP_CHANNEL_ID, tripName, tripImportance)
+			tripChannel.setShowBadge(false)
+			tripChannel.vibrationPattern = longArrayOf(0)
+			tripChannel.enableVibration(false)
+			tripChannel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+			mNotificationManager.createNotificationChannel(tripChannel)
+
+
+			// ARRIVAL CHANNEL
+			val arrivalName = "Notificaciones de aviso de llegada a destino"
+			val arrivalImportance = NotificationManager.IMPORTANCE_HIGH
+			val arrivalChannel = NotificationChannel(ARRIVAL_CHANNEL_ID, arrivalName, arrivalImportance)
+			arrivalChannel.setShowBadge(false)
+			arrivalChannel.vibrationPattern = longArrayOf(200, 500, 200, 500, 200, 500)
+			arrivalChannel.enableVibration(true)
+			arrivalChannel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+			mNotificationManager.createNotificationChannel(arrivalChannel)
+		}
+
+		when (val data = notificationOptions.notificationData) {
+			is ArrivalNotificationData -> {
+				startForeground(data.id, buildArrivalNotification(data.stopCode, data.topMessage, data.bottomMessage).build())
+			}
+			is NormalNotificationData -> {
+				startForeground(data.id, buildNormalNotification(data.title, data.message).build())
+			}
+			is TravelNotificationData -> {
+				startForeground(data.id, buildTravelNotification(data).build())
+			}
+		}
+
+		acquireLockMode()
+		isRunningService = true
+	}
+
+	private fun updateNotification() {
+		val data = notificationOptions.notificationData
+		val mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+		when (data) {
+			is ArrivalNotificationData -> {
+				mNotificationManager.notify(data.id, buildArrivalNotification(data.stopCode, data.topMessage, data.bottomMessage).build())
+			}
+			is NormalNotificationData -> {
+				mNotificationManager.notify(data.id, buildNormalNotification(data.title, data.message, data.vibration).build())
+			}
+			is TravelNotificationData -> {
+				mNotificationManager.notify(data.id, buildTravelNotification(data).build())
+			}
+		}
+	}
+
+	private fun getNotificationColor(): Int? {
 		var iconBackgroundColor: Int? = null
-		val iconBackgroundColorRgb = notificationOptions.iconData?.backgroundColorRgb?.split(",")
+		val iconBackgroundColorRgb = notificationOptions.backgroundColorRgb?.split(",")
 		if (iconBackgroundColorRgb != null && iconBackgroundColorRgb.size == 3) {
 			iconBackgroundColor = Color.rgb(
 				iconBackgroundColorRgb[0].toInt(),
@@ -179,75 +237,85 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 				iconBackgroundColorRgb[2].toInt()
 			)
 		}
-		val iconResId = if (iconResType.isNullOrEmpty()
-			|| iconResPrefix.isNullOrEmpty()
-			|| iconName.isNullOrEmpty()) {
-			getAppIconResourceId(pm)
-		} else {
-			getDrawableResourceId(iconResType, iconResPrefix, iconName)
-		}
-		val pendingIntent = getPendingIntent(pm)
+		return iconBackgroundColor
+	}
 
-		// Create a notification and start the foreground service.
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			val channel = NotificationChannel(
-				notificationOptions.channelId,
-				notificationOptions.channelName,
-				notificationOptions.channelImportance
-			)
-			channel.description = notificationOptions.channelDescription
-			channel.enableVibration(notificationOptions.enableVibration)
-			if (!notificationOptions.playSound) {
-				channel.setSound(null, null)
+	private fun buildTravelNotification(data: TravelNotificationData): NotificationCompat.Builder {
+		val notificationLayout = if (data.destinationCode == "") {
+			val layout = RemoteViews(packageName, R.layout.notification_travel_empty)
+			layout.setTextViewText(R.id.notification_top, data.topMessage)
+			val color = getNotificationColor()
+			if (color != null) {
+				layout.setTextColor(R.id.notification_top, color)
 			}
-			val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-			nm.createNotificationChannel(channel)
-
-			val builder = Notification.Builder(this, notificationOptions.channelId)
-			builder.setOngoing(true)
-			builder.setShowWhen(notificationOptions.showWhen)
-			builder.setSmallIcon(iconResId)
-			builder.setContentIntent(pendingIntent)
-			builder.setContentTitle(notificationOptions.contentTitle)
-			builder.setContentText(notificationOptions.contentText)
-			builder.setVisibility(notificationOptions.visibility)
-			if (iconBackgroundColor != null) {
-				builder.setColor(iconBackgroundColor)
-			}
-			for (action in buildButtonActions()) {
-				builder.addAction(action)
-			}
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-				builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-			}
-			startForeground(notificationOptions.serviceId, builder.build())
+			layout
 		} else {
-			val builder = NotificationCompat.Builder(this, notificationOptions.channelId)
-			builder.setOngoing(true)
-			builder.setShowWhen(notificationOptions.showWhen)
-			builder.setSmallIcon(iconResId)
-			builder.setContentIntent(pendingIntent)
-			builder.setContentTitle(notificationOptions.contentTitle)
-			builder.setContentText(notificationOptions.contentText)
-			builder.setVisibility(notificationOptions.visibility)
-			if (iconBackgroundColor != null) {
-				builder.color = iconBackgroundColor
-			}
-			if (!notificationOptions.enableVibration) {
-				builder.setVibrate(longArrayOf(0L))
-			}
-			if (!notificationOptions.playSound) {
-				builder.setSound(null)
-			}
-			builder.priority = notificationOptions.priority
-			for (action in buildButtonCompatActions()) {
-				builder.addAction(action)
-			}
-			startForeground(notificationOptions.serviceId, builder.build())
+			val layout = RemoteViews(packageName, R.layout.notification_travel_data)
+			layout.setTextViewText(R.id.stop_code, data.destinationCode)
+			layout.setTextViewText(R.id.stations_quantity, data.destinationStops)
+			layout.setTextViewText(R.id.stop_name, data.destinationName)
+			layout.setTextViewText(R.id.station_plural, data.destinationStopsSuffix)
+			layout
 		}
 
-		acquireLockMode()
-		isRunningService = true
+		val notificationBuilder = NotificationCompat.Builder(this, TRIP_CHANNEL_ID)
+			.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+			.setCustomContentView(notificationLayout)
+			.setSmallIcon(getAppIconResourceId(applicationContext.packageManager))
+			.setAutoCancel(true)
+
+		val color = getNotificationColor()
+		if (color != null) {
+			notificationBuilder.color = color
+		}
+		val pendingIntent = getPendingIntent(applicationContext.packageManager)
+
+		notificationBuilder.setContentIntent(pendingIntent)
+		return notificationBuilder
+	}
+
+	private fun buildArrivalNotification(stopCode: String, top: String, bottom: String): NotificationCompat.Builder {
+		val notificationLayout = RemoteViews(packageName, R.layout.notification_arrival_data)
+		notificationLayout.setTextViewText(R.id.stop_code_text, stopCode)
+		notificationLayout.setTextViewText(R.id.data_top_text, top)
+		notificationLayout.setTextViewText(R.id.data_bottom_text, bottom)
+		notificationLayout.setTextColor(R.id.data_bottom_text, resources.getColor(R.color.grises_generales_mid_gray_2))
+
+		val notificationBuilder = NotificationCompat.Builder(this, TRIP_CHANNEL_ID)
+			.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+			.setCustomContentView(notificationLayout)
+			.setSmallIcon(getAppIconResourceId(applicationContext.packageManager))
+			.setAutoCancel(true)
+
+		val color = getNotificationColor()
+		if (color != null) {
+			notificationBuilder.color = color
+		}
+		val pendingIntent = getPendingIntent(applicationContext.packageManager)
+
+		notificationBuilder.setContentIntent(pendingIntent)
+		return notificationBuilder
+	}
+
+	private fun buildNormalNotification(title: String, message: String, enableVibration:Boolean = false): NotificationCompat.Builder {
+		val notificationBuilder = NotificationCompat.Builder(this, ARRIVAL_CHANNEL_ID)
+			.setContentTitle(title)
+			.setContentText(message)
+			.setSmallIcon(getAppIconResourceId(applicationContext.packageManager))
+			.setAutoCancel(true)
+
+		if (enableVibration) {
+			notificationBuilder.setVibrate(longArrayOf(200, 500, 200, 500, 200, 500))
+		}
+
+		val color = getNotificationColor()
+		if (color != null) {
+			notificationBuilder.color = color
+		}
+		val pendingIntent = getPendingIntent(applicationContext.packageManager)
+
+		notificationBuilder.setContentIntent(pendingIntent)
+		return notificationBuilder
 	}
 
 	private fun stopForegroundService() {
@@ -292,23 +360,6 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 		}
 	}
 
-	private fun setRestartAlarm() {
-		val calendar = Calendar.getInstance().apply {
-			timeInMillis = System.currentTimeMillis()
-			add(Calendar.SECOND, 1)
-		}
-
-		val intent = Intent(this, RestartReceiver::class.java)
-		val sender = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-		} else {
-			PendingIntent.getBroadcast(this, 0, intent, 0)
-		}
-
-		val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-		alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, sender)
-	}
-
 	private fun isSetStopWithTaskFlag(): Boolean {
 		val pm = applicationContext.packageManager
 		val cName = ComponentName(this, this.javaClass)
@@ -346,13 +397,23 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 	private fun startForegroundTask() {
 		stopForegroundTask()
 
+		LocationManager.getInstance(this).startLocationUpdates(object: LocationManager.LocationListener {
+			override fun onLocation(location: Location) {
+				lastKnownLocation = location
+			}
+		})
+
 		val callback = object : MethodChannel.Result {
 			override fun success(result: Any?) {
 				backgroundJob = CoroutineScope(Dispatchers.Default).launch {
 					do {
 						withContext(Dispatchers.Main) {
 							try {
-								backgroundChannel?.invokeMethod(ACTION_TASK_EVENT, null)
+								var data = ""
+								if (lastKnownLocation != null) {
+									data = "${lastKnownLocation!!.latitude}|${lastKnownLocation!!.longitude}"
+								}
+								backgroundChannel?.invokeMethod(ACTION_TASK_EVENT, data)
 							} catch (e: Exception) {
 								Log.e(TAG, "invokeMethod", e)
 							}
@@ -371,8 +432,11 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 	}
 
 	private fun stopForegroundTask() {
-		backgroundJob?.cancel()
-		backgroundJob = null
+		if (backgroundJob != null) {
+			LocationManager.getInstance(this).stopLocationUpdates()
+			backgroundJob?.cancel()
+			backgroundJob = null
+		}
 	}
 
 	private fun destroyBackgroundChannel() {
@@ -442,47 +506,5 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 				PendingIntent.getActivity(this, 20000, launchIntent, 0)
 			}
 		}
-	}
-
-	private fun buildButtonActions(): List<Notification.Action> {
-		val actions = mutableListOf<Notification.Action>()
-		val buttons = notificationOptions.buttons
-		for (i in buttons.indices) {
-			val bIntent = Intent(ACTION_BUTTON_PRESSED).apply {
-				putExtra(DATA_FIELD_NAME, buttons[i].id)
-			}
-			val bPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-				PendingIntent.getBroadcast(this, i + 1, bIntent, PendingIntent.FLAG_IMMUTABLE)
-			} else {
-				PendingIntent.getBroadcast(this, i + 1, bIntent, 0)
-			}
-			val bAction = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-				Notification.Action.Builder(null, buttons[i].text, bPendingIntent).build()
-			} else {
-				Notification.Action.Builder(0, buttons[i].text, bPendingIntent).build()
-			}
-			actions.add(bAction)
-		}
-
-		return actions
-	}
-
-	private fun buildButtonCompatActions(): List<NotificationCompat.Action> {
-		val actions = mutableListOf<NotificationCompat.Action>()
-		val buttons = notificationOptions.buttons
-		for (i in buttons.indices) {
-			val bIntent = Intent(ACTION_BUTTON_PRESSED).apply {
-				putExtra(DATA_FIELD_NAME, buttons[i].id)
-			}
-			val bPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-				PendingIntent.getBroadcast(this, i + 1, bIntent, PendingIntent.FLAG_IMMUTABLE)
-			} else {
-				PendingIntent.getBroadcast(this, i + 1, bIntent, 0)
-			}
-			val bAction = NotificationCompat.Action.Builder(0, buttons[i].text, bPendingIntent).build()
-			actions.add(bAction)
-		}
-
-		return actions
 	}
 }

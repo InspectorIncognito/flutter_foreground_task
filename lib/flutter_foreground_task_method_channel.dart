@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_foreground_task/models/notification_data.dart';
 
 import 'flutter_foreground_task_platform_interface.dart';
 import 'models/android_notification_options.dart';
@@ -22,8 +23,7 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     required AndroidNotificationOptions androidNotificationOptions,
     required IOSNotificationOptions iosNotificationOptions,
     required ForegroundTaskOptions foregroundTaskOptions,
-    required String notificationTitle,
-    required String notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) async {
     if (await isRunningService) {
@@ -40,8 +40,7 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     final options = Platform.isAndroid
         ? androidNotificationOptions.toJson()
         : iosNotificationOptions.toJson();
-    options['notificationContentTitle'] = notificationTitle;
-    options['notificationContentText'] = notificationText;
+    options['notificationData'] = notificationData.toJson();
     if (callback != null) {
       options.addAll(foregroundTaskOptions.toJson());
       options['callbackHandle'] =
@@ -82,14 +81,12 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
 
   @override
   Future<bool> updateService({
-    String? notificationTitle,
-    String? notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) async {
     if (await isRunningService) {
       final options = <String, dynamic>{
-        'notificationContentTitle': notificationTitle,
-        'notificationContentText': notificationText,
+        'notificationData': notificationData.toJson(),
       };
       if (callback != null) {
         options['callbackHandle'] =
@@ -227,5 +224,23 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       return getNotificationPermissionFromIndex(result);
     }
     return NotificationPermission.granted;
+  }
+
+  @override
+  Future<bool> notify({
+    required NotificationData notificationData,
+  }) async {
+    final options = <String, dynamic>{
+      'notificationData': notificationData.toJson(),
+    };
+    return await methodChannel.invokeMethod('notify', options);
+  }
+
+  @override
+  Future<bool> cancelNotification({required int id}) async {
+    final options = <String, dynamic>{
+      'notificationId': id,
+    };
+    return await methodChannel.invokeMethod('cancelNotification', options);
   }
 }

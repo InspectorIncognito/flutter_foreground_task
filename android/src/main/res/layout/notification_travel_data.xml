@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="48dp">
+
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_centerVertical="true"
+        android:background="#222222"
+        android:layout_width="80dp"
+        android:layout_height="32dp">
+
+        <ImageView
+            android:layout_marginStart="2dp"
+            android:src="@drawable/iconos_paradero_mapa"
+            android:layout_width="24dp"
+            android:layout_height="32dp" />
+
+        <TextView
+            android:id="@+id/stop_code"
+            android:layout_marginStart="2dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            tools:text="PE8888"
+            />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:minWidth="100dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:layout_marginStart="90dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                style="@style/TextAppearance.Compat.Notification.Title"
+                android:id="@+id/stations_quantity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif"
+                android:textStyle="bold"
+                tools:text="n"
+                />
+
+            <TextView
+                android:layout_marginStart="4dp"
+                android:id="@+id/station_plural"
+                style="@style/TextAppearance.Compat.Notification.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif"
+                android:textColor="#9b9b9b"
+                tools:text="paradas hasta:"
+                />
+
+        </LinearLayout>
+
+        <TextView
+            style="@style/TextAppearance.Compat.Notification.Title"
+            android:id="@+id/stop_name"
+            android:layout_width="match_parent"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:textStyle="normal"
+            android:textColor="#4d4d4d"
+            tools:text="Av. La Florida con Vicuña Mackenna"
+            />
+
+    </LinearLayout>
+
+
+</RelativeLayout>

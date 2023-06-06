@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_foreground_task/models/notification_data.dart';
 
 /// A widget to start the foreground service when the app is minimized or closed.
 /// This widget must be declared above the [Scaffold] widget.
@@ -18,10 +19,7 @@ class WillStartForegroundTask extends StatefulWidget {
   final ForegroundTaskOptions foregroundTaskOptions;
 
   /// The title that will be displayed in the notification.
-  final String notificationTitle;
-
-  /// The text that will be displayed in the notification.
-  final String notificationText;
+  final NotificationData notificationData;
 
   /// A top-level function that calls the setTaskHandler function.
   final Function? callback;
@@ -36,8 +34,7 @@ class WillStartForegroundTask extends StatefulWidget {
     required this.androidNotificationOptions,
     required this.iosNotificationOptions,
     required this.foregroundTaskOptions,
-    required this.notificationTitle,
-    required this.notificationText,
+    required this.notificationData,
     this.callback,
     required this.child,
   }) : super(key: key);
@@ -61,8 +58,7 @@ class _WillStartForegroundTaskState extends State<WillStartForegroundTask>
       FlutterForegroundTask.restartService();
     } else {
       FlutterForegroundTask.startService(
-        notificationTitle: widget.notificationTitle,
-        notificationText: widget.notificationText,
+        notificationData: widget.notificationData,
         callback: widget.callback,
       );
     }

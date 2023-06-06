@@ -1,8 +1,11 @@
 package com.pravera.flutter_foreground_task.service
 
+import android.app.NotificationManager
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.pravera.flutter_foreground_task.PreferencesKey
 import com.pravera.flutter_foreground_task.models.ForegroundServiceAction
 import com.pravera.flutter_foreground_task.models.ForegroundServiceStatus
 import com.pravera.flutter_foreground_task.models.ForegroundTaskOptions
@@ -119,4 +122,26 @@ class ForegroundServiceManager {
 
 	/** Returns whether the foreground service is running. */
 	fun isRunningService(): Boolean = ForegroundService.isRunningService
+
+	fun notify(context: Context, args: Any?): Boolean {
+		val argsMap = args as? Map<*, *>
+		NotificationOptions.updateContent(context, argsMap)
+		return true
+	}
+
+	fun cancelNotification(context: Context, arguments: Any?): Boolean {
+		try {
+			val argsMap = arguments as? Map<*, *>
+			val notificationId = "${argsMap?.get(PreferencesKey.NOTIFICATION_ID)}".toIntOrNull()
+
+			if (notificationId != null) {
+				val mNotificationManager = context.getSystemService(Service.NOTIFICATION_SERVICE) as NotificationManager
+				mNotificationManager.cancel(notificationId)
+			}
+		} catch (e: Exception) {
+			return false
+		}
+
+		return true
+	}
 }

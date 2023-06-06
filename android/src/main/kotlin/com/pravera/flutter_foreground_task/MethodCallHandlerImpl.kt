@@ -104,6 +104,11 @@ class MethodCallHandlerImpl(private val context: Context, private val provider: 
                     ForegroundServiceUtils.openSystemAlertWindowSettings(it, 248, forceOpen)
                 }
             }
+            "notify" -> {
+                result.success(provider.getForegroundServiceManager().notify(context, args))
+            }
+            "cancelNotification" ->
+                result.success(provider.getForegroundServiceManager().cancelNotification(context, args))
             else -> result.notImplemented()
         }
     }

@@ -8,6 +8,7 @@ import 'package:flutter_foreground_task/exception/foreground_task_exception.dart
 import 'package:flutter_foreground_task/models/foreground_task_options.dart';
 import 'package:flutter_foreground_task/models/ios_notification_options.dart';
 import 'package:flutter_foreground_task/models/android_notification_options.dart';
+import 'package:flutter_foreground_task/models/notification_data.dart';
 import 'package:flutter_foreground_task/models/notification_permission.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'flutter_foreground_task_platform_interface.dart';
@@ -34,7 +35,7 @@ abstract class TaskHandler {
   Future<void> onStart(DateTime timestamp, SendPort? sendPort);
 
   /// Called when an event occurs.
-  Future<void> onEvent(DateTime timestamp, SendPort? sendPort);
+  Future<void> onEvent(DateTime timestamp, SendPort? sendPort, String data);
 
   /// Called when the task is destroyed.
   Future<void> onDestroy(DateTime timestamp, SendPort? sendPort);
@@ -70,8 +71,7 @@ class FlutterForegroundTask {
 
   /// Start the foreground service with notification.
   static Future<bool> startService({
-    required String notificationTitle,
-    required String notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) async {
     if (_initialized == false) {
@@ -83,8 +83,7 @@ class FlutterForegroundTask {
       androidNotificationOptions: _androidNotificationOptions,
       iosNotificationOptions: _iosNotificationOptions,
       foregroundTaskOptions: _foregroundTaskOptions,
-      notificationTitle: notificationTitle,
-      notificationText: notificationText,
+      notificationData: notificationData,
       callback: callback,
     );
   }
@@ -95,13 +94,11 @@ class FlutterForegroundTask {
 
   /// Update the foreground service.
   static Future<bool> updateService({
-    String? notificationTitle,
-    String? notificationText,
+    required NotificationData notificationData,
     Function? callback,
   }) =>
       FlutterForegroundTaskPlatform.instance.updateService(
-        notificationText: notificationText,
-        notificationTitle: notificationTitle,
+        notificationData: notificationData,
         callback: callback,
       );
 
@@ -262,7 +259,7 @@ class FlutterForegroundTask {
           await handler.onStart(timestamp, sendPort);
           break;
         case 'onEvent':
-          await handler.onEvent(timestamp, sendPort);
+          await handler.onEvent(timestamp, sendPort, call.arguments.toString());
           break;
         case 'onDestroy':
           await handler.onDestroy(timestamp, sendPort);
@@ -302,4 +299,19 @@ class FlutterForegroundTask {
 
     return true;
   }
+
+  static Future<bool> notify({
+    required NotificationData notificationData,
+  }) =>
+      FlutterForegroundTaskPlatform.instance.notify(
+        notificationData: notificationData,
+      );
+
+  /// Cancel a notification
+  static Future<bool> cancelNotification({
+    required int id,
+  }) =>
+      FlutterForegroundTaskPlatform.instance.cancelNotification(
+        id: id,
+      );
 }
