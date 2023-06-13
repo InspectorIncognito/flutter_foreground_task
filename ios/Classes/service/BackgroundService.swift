@@ -8,8 +8,9 @@
 import Flutter
 import Foundation
 import UserNotifications
+import CoreLocation
 
-let NOTIFICATION_ID: String = "flutter_foreground_task/backgroundNotification"
+// let NOTIFICATION_ID: String = "flutter_foreground_task/backgroundNotification"
 let BG_ISOLATE_NAME: String = "flutter_foreground_task/backgroundIsolate"
 let BG_CHANNEL_NAME: String = "flutter_foreground_task/background"
 
@@ -18,7 +19,7 @@ let ACTION_TASK_EVENT: String = "onEvent"
 let ACTION_TASK_DESTROY: String = "onDestroy"
 
 @available(iOS 10.0, *)
-class BackgroundService: NSObject {
+class BackgroundService: BusableController {
   static let sharedInstance = BackgroundService()
   
   var isRunningService: Bool = false
@@ -36,22 +37,35 @@ class BackgroundService: NSObject {
   private var flutterEngine: FlutterEngine? = nil
   private var backgroundChannel: FlutterMethodChannel? = nil
   private var backgroundTaskTimer: Timer? = nil
+  private var lastLocation: CLLocation? = nil
+    
+    /// are setup in the ViewController.setupBus method
+  var subs: BusableController.Subs = [:]
+  override var SubscriptionEvents: BusableController.Subs {
+      get { return self.subs }
+  }
   
   override init() {
     userNotificationCenter = UNUserNotificationCenter.current()
     super.init()
+    setupBus()
+    register()
+    LocationManager.shared.requestAccess()
     // userNotificationCenter.delegate = self
+  }
+    
+  deinit {
+    deregister()
   }
   
   func run(action: BackgroundServiceAction) {
     let prefs = UserDefaults.standard
-    
-    notificationContentTitle = prefs.string(forKey: NOTIFICATION_CONTENT_TITLE) ?? notificationContentTitle
-    notificationContentText = prefs.string(forKey: NOTIFICATION_CONTENT_TEXT) ?? notificationContentText
-    showNotification = prefs.bool(forKey: SHOW_NOTIFICATION)
-    playSound = prefs.bool(forKey: PLAY_SOUND)
+    showNotification = true
+//    showNotification = prefs.bool(forKey: SHOW_NOTIFICATION)
+//    playSound = prefs.bool(forKey: PLAY_SOUND)
+
     taskInterval = prefs.integer(forKey: TASK_INTERVAL)
-    isOnceEvent = prefs.bool(forKey: IS_ONCE_EVENT)
+//    isOnceEvent = prefs.bool(forKey: IS_ONCE_EVENT)
     
     switch action {
       case .START:
@@ -59,17 +73,14 @@ class BackgroundService: NSObject {
         isRunningService = true
         if let callbackHandle = prefs.object(forKey: CALLBACK_HANDLE) as? Int64 {
           executeDartCallback(callbackHandle: callbackHandle)
+          self.startJob()
+          self.sendNotification()
         }
         break
       case .RESTART:
-        sendNotification()
-        isRunningService = true
-        if let callbackHandle = prefs.object(forKey: CALLBACK_HANDLE_ON_RESTART) as? Int64 {
-          executeDartCallback(callbackHandle: callbackHandle)
-        }
         break
       case .UPDATE:
-        sendNotification()
+        self.sendNotification()
         isRunningService = true
         if let callbackHandle = prefs.object(forKey: CALLBACK_HANDLE) as? Int64 {
           executeDartCallback(callbackHandle: callbackHandle)
@@ -79,9 +90,12 @@ class BackgroundService: NSObject {
         destroyBackgroundChannel() { _ in
           self.isRunningService = false
           self.isGrantedNotificationAuthorization = false
+          self.stopJob()
           self.removeAllNotification()
         }
         break
+    case .NOTIFY:
+        self.sendNotification()
     }
   }
   
@@ -105,6 +119,14 @@ class BackgroundService: NSObject {
   
   private func sendNotification() {
     if isGrantedNotificationAuthorization && showNotification {
+      let prefs = UserDefaults.standard
+        
+      guard let notificationContentTitle = prefs.string(forKey: NOTIFICATION_CONTENT_TITLE),
+            let notificationContentText = prefs.string(forKey: NOTIFICATION_CONTENT_TEXT),
+            let notificationId = prefs.string(forKey: NOTIFICATION_ID) else {
+        return
+      }
+        
       let notificationContent = UNMutableNotificationContent()
       notificationContent.title = notificationContentTitle
       notificationContent.body = notificationContentText
@@ -112,14 +134,14 @@ class BackgroundService: NSObject {
         notificationContent.sound = UNNotificationSound.default
       }
       
-      let request = UNNotificationRequest(identifier: NOTIFICATION_ID, content: notificationContent, trigger: nil)
+      let request = UNNotificationRequest(identifier: notificationId, content: notificationContent, trigger: nil)
       userNotificationCenter.add(request, withCompletionHandler: nil)
     }
   }
   
   private func removeAllNotification() {
-    userNotificationCenter.removePendingNotificationRequests(withIdentifiers: [NOTIFICATION_ID])
-    userNotificationCenter.removeDeliveredNotifications(withIdentifiers: [NOTIFICATION_ID])
+    userNotificationCenter.removeAllDeliveredNotifications()
+    userNotificationCenter.removeAllPendingNotificationRequests()
   }
   
   private func executeDartCallback(callbackHandle: Int64) {
@@ -142,29 +164,8 @@ class BackgroundService: NSObject {
     }
   }
   
-  private func startBackgroundTask() {
-    if backgroundTaskTimer != nil { stopBackgroundTask() }
-    
-    backgroundChannel?.invokeMethod(ACTION_TASK_START, arguments: nil) { _ in
-      if self.isOnceEvent {
-        self.backgroundChannel?.invokeMethod(ACTION_TASK_EVENT, arguments: nil)
-        return
-      }
-      
-      let timeInterval = TimeInterval(self.taskInterval / 1000)
-      self.backgroundTaskTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { _ in
-        self.backgroundChannel?.invokeMethod(ACTION_TASK_EVENT, arguments: nil)
-      }
-    }
-  }
-  
-  private func stopBackgroundTask() {
-    backgroundTaskTimer?.invalidate()
-    backgroundTaskTimer = nil
-  }
-  
   private func destroyBackgroundChannel(onComplete: @escaping (Bool) -> Void) {
-    stopBackgroundTask()
+    //stopJob()
     
     // The background task destruction is complete and a new background task can be started.
     if backgroundChannel == nil {
@@ -182,7 +183,8 @@ class BackgroundService: NSObject {
   private func onMethodCall(call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
       case "initialize":
-        startBackgroundTask()
+        //startBackgroundTask()
+        break
       default:
         result(FlutterMethodNotImplemented)
     }
@@ -209,4 +211,73 @@ class BackgroundService: NSObject {
       completionHandler([.alert])
     }
   }
+}
+
+extension BackgroundService {
+    
+    func startJob() {
+        print("VC: startJob")
+        let gps = LocationManager.shared
+        if gps.isHasAccess() {
+            gps.startMonitoring()
+            print("VC: LongProcessJob start")
+            let queue = DispatchQueue(label: "LongProcessJob start")
+            // start async
+            queue.async {
+                while true {
+                    var data = ""
+                    if let last = self.lastLocation {
+                        data = "\(last.coordinate.latitude)|\(last.coordinate.longitude)"
+                    }
+                    self.backgroundChannel?.invokeMethod(ACTION_TASK_EVENT, arguments: data)
+                    if !self.isRunningService {
+                        break
+                    }
+                    let secs = Double(self.taskInterval / 1000)
+                    // sleep for secs
+                    Thread.sleep(until: Date(timeIntervalSinceNow: secs))
+                }
+                print("VC: LongProcessJob stop")
+            }
+        } else {
+            print("VC: no access")
+        }
+    }
+    
+    func stopJob() {
+        print("VC: stopJob")
+        let gps = LocationManager.shared
+        if gps.state == .Monitoring {
+            gps.stopMonitoring()
+        }
+    }
+}
+
+extension BackgroundService {
+    func setupBus() {
+        self.subs = [
+            .AppEnteredBackground: self.enteredBackground(_:),
+            .AppEnteredForeground: self.enteredForeground(_:),
+            .LocationUpdate: self.locationAccessChanged(notification:),
+        ]
+    }
+    
+    private func enteredBackground(_: Notification) {
+        print("VC: App entered background")
+    }
+    
+    private func enteredForeground(_: Notification) {
+        print("VC: App entered foreground")
+    }
+    
+    private func locationAccessChanged(notification: Notification) {
+        print("VC: new location")
+        let info = notification.userInfo
+        if let locations = info?["locations"] as? [CLLocation] {
+            if locations.isEmpty {
+                return
+            }
+            lastLocation = locations.first
+        }
+    }
 }

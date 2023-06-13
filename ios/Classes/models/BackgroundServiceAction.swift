@@ -12,4 +12,5 @@ enum BackgroundServiceAction {
   case RESTART
   case UPDATE
   case STOP
+  case NOTIFY
 }

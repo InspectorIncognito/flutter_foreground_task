@@ -30,9 +30,20 @@ class MyTaskHandler extends TaskHandler {
 
   @override
   Future<void> onEvent(DateTime timestamp, SendPort? sendPort, String data) async {
-    FlutterForegroundTask.updateService(
-      notificationData: ArrivalNotificationData(1234, "PA1231", "Nuevo Dato", "Buscando $_eventCount"),
-    );
+    if (_eventCount % 6 == 1) {
+      print(data);
+      await FlutterForegroundTask.updateService(
+        notificationData: ArrivalNotificationData(1234, "PA1231", "Nuevo Dato", "Buscando $_eventCount"),
+      );
+    }
+    if (_eventCount == 8) {
+      await FlutterForegroundTask.notify(
+          notificationData: NormalNotificationData(1111, "Has llegado a tu destino", "Fin del viaje :p")
+      );
+    }
+    if (_eventCount == 10) {
+      await FlutterForegroundTask.cancelNotification(id: 1111);
+    }
 
     // Send data to the main isolate.
     sendPort?.send(_eventCount);

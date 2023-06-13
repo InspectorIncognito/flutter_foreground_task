@@ -43,6 +43,10 @@ public class SwiftFlutterForegroundTaskPlugin: NSObject, FlutterPlugin {
         UIControl().sendAction(#selector(URLSessionTask.suspend), to: UIApplication.shared, for: nil)
       case "isAppOnForeground":
         result(UIApplication.shared.applicationState == .active)
+      case "notify":
+        result(backgroundServiceManager?.notify(call: call) ?? false)
+      case "cancelNotification":
+        result(backgroundServiceManager?.cancelNotification(call: call) ?? false)
       default:
         result(FlutterMethodNotImplemented)
     }
