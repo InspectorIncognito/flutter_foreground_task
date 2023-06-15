@@ -221,6 +221,7 @@ extension BackgroundService {
         if gps.isHasAccess() {
             gps.startMonitoring()
             print("VC: LongProcessJob start")
+            self.backgroundChannel?.invokeMethod(ACTION_TASK_START, arguments: nil)
             let queue = DispatchQueue(label: "LongProcessJob start")
             // start async
             queue.async {
@@ -246,6 +247,7 @@ extension BackgroundService {
     
     func stopJob() {
         print("VC: stopJob")
+        self.backgroundChannel?.invokeMethod(ACTION_TASK_DESTROY, arguments: nil)
         let gps = LocationManager.shared
         if gps.state == .Monitoring {
             gps.stopMonitoring()
